@@ -43,10 +43,14 @@ async def list_agents(api_key: str = Depends(get_api_key)):
     agents_data = []
     for agent in agents_list:
         cfg = agent_runner.get_agent_config(agent)
-        # Default to /agents/agent_name if custom endpoint is not defined
-        endpoint = cfg.get("endpoint", f"/agents/{agent}")
+        # Default to /agent_name if custom endpoint is not defined
+        endpoint = cfg.get("endpoint", f"/{agent}")
         if not endpoint.startswith("/"):
             endpoint = f"/{endpoint}"
+            
+        # Ensure it's prefixed with /agents
+        if not endpoint.startswith("/agents"):
+            endpoint = f"/agents{endpoint}"
             
         agents_data.append({
             "name": agent,
@@ -77,11 +81,15 @@ async def startup_event():
     agents = agent_runner.get_available_agents()
     for agent_name in agents:
         cfg = agent_runner.get_agent_config(agent_name)
-        endpoint = cfg.get("endpoint", f"/agents/{agent_name}")
+        endpoint = cfg.get("endpoint", f"/{agent_name}")
         
         # Ensure it starts with slash
         if not endpoint.startswith("/"):
             endpoint = f"/{endpoint}"
+            
+        # Ensure it's prefixed with /agents
+        if not endpoint.startswith("/agents"):
+            endpoint = f"/agents{endpoint}"
             
         print(f"Registering agent '{agent_name}' at endpoint POST {endpoint}")
         
