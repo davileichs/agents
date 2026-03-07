@@ -86,8 +86,15 @@ import app.models.travel_profile
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    if settings.database_url:
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            print("Database tables initialized successfully.")
+        except Exception as e:
+            print(f"Warning: Failed to initialize database tables: {e}")
+    else:
+        print("Warning: DATABASE_URL not set, skipping table initialization.")
         
     agents = agent_runner.get_available_agents()
     for agent_name in agents:
@@ -115,4 +122,7 @@ async def lifespan(app: FastAPI):
         )
     yield
 
-app = FastAPI(title="Agents Service", description="API to run dynamically configured agents", lifespan=lifespan)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint to verify the service is running."""
+    return {"status": "healthy"}
