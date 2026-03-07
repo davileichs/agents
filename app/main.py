@@ -78,12 +78,13 @@ def create_agent_route(agent_name: str):
     route_handler.__name__ = f"run_{agent_name}"
     return route_handler
 
+from contextlib import asynccontextmanager
 from app.services.database import engine, Base
-import app.models.token  # Ensure models are imported before creating tables
+import app.models.token
+import app.models.travel_profile
 
-# Register endpoints at startup based on agent configurations
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     # Initialize database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -112,3 +113,6 @@ async def startup_event():
             dependencies=[Depends(get_api_key)],
             tags=["Agents Execution"]
         )
+    yield
+
+app = FastAPI(title="Agents Service", description="API to run dynamically configured agents", lifespan=lifespan)

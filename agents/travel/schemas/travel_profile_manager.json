@@ -1,0 +1,25 @@
+{
+    "name": "travel_profile_manager",
+    "description": "Manage travel profile for a user (set/get default departure city).",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": [
+                    "get",
+                    "set",
+                    "delete"
+                ],
+                "description": "The action to perform: 'get' to retrieve current departure, 'set' to update it, 'delete' to remove the profile."
+            },
+            "departure": {
+                "type": "string",
+                "description": "The city name or airport code to set as default departure (required for 'set' action)."
+            }
+        },
+        "required": [
+            "action"
+        ]
+    }
+}

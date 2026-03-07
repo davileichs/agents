@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 import logging
-from legacy.core.services.travel_profile_store import travel_profile_store
+from app.services.travel_service import travel_service
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +17,15 @@ async def travel_profile_manager(**kwargs) -> Dict[str, Any]:
         if action == "set":
             if not departure:
                 return {"success": False, "error": "departure is required for set action"}
-            travel_profile_store.set_default_departure(user_id, departure)
+            await travel_service.set_default_departure(user_id, departure)
             return {"success": True, "message": "Default departure updated", "departure": departure}
 
         if action == "get":
-            saved = travel_profile_store.get_default_departure(user_id)
+            saved = await travel_service.get_default_departure(user_id)
             return {"success": True, "departure": saved}
 
         if action == "delete":
-            ok = travel_profile_store.delete_profile(user_id)
+            ok = await travel_service.delete_profile(user_id)
             return {"success": True, "deleted": ok}
 
         return {"success": False, "error": f"Invalid action: {action}"}

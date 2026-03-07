@@ -66,8 +66,8 @@ async def flight_search(**kwargs) -> Dict[str, Any]:
         
         if (not departure) and user_id:
             try:
-                from legacy.core.services.travel_profile_store import travel_profile_store
-                stored = travel_profile_store.get_default_departure(str(user_id))
+                from app.services.travel_service import travel_service
+                stored = await travel_service.get_default_departure(str(user_id))
                 if stored:
                     departure = stored
             except Exception:

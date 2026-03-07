@@ -4,8 +4,11 @@ import importlib.util
 import inspect
 import json
 import litellm
+import logging
 from typing import List, Dict, Any, Callable
 from .config import settings
+
+logger = logging.getLogger(__name__)
 
 AGENTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "agents")
 
@@ -61,24 +64,79 @@ def generate_tool_schema(func: Callable) -> dict:
     }
 
 def get_tool_schemas(agent_name: str, tools_map: Dict[str, Callable]) -> List[dict]:
-    """Generates or loads JSON schemas for the agent's tools."""
+    """Generates or loads JSON schemas for the agent's tools and normalizes them for LiteLLM."""
     schemas = []
     schemas_dir = os.path.join(AGENTS_DIR, agent_name, "schemas")
     
     for tool_name, func in tools_map.items():
         # Check if an explicit schema file exists
+        schema = None
         schema_file_json = os.path.join(schemas_dir, f"{tool_name}.json")
         schema_file_yaml = os.path.join(schemas_dir, f"{tool_name}.yaml")
         
         if os.path.exists(schema_file_json):
             with open(schema_file_json, "r") as f:
-                schemas.append(json.load(f))
+                schema = json.load(f)
         elif os.path.exists(schema_file_yaml):
             with open(schema_file_yaml, "r") as f:
-                schemas.append(yaml.safe_load(f))
+                schema = yaml.safe_load(f)
         else:
             # Fallback to auto-generation
-            schemas.append(generate_tool_schema(func))
+            schema = generate_tool_schema(func)
+            
+        # Normalize schema for LiteLLM
+        if schema:
+            if not isinstance(schema, dict):
+                continue
+
+            # Ensure we have a "function" wrapper with a "name"
+            if schema.get("type") == "function" and "function" in schema:
+                # Format: {"type": "function", "function": {...}}
+                if "name" not in schema["function"]:
+                    schema["function"]["name"] = tool_name
+                # Ensure parameters are present inside function
+                if "parameters" not in schema["function"] and "properties" in schema["function"]:
+                    # If properties are at the same level as name/description, wrap them
+                    props = schema["function"].pop("properties")
+                    req = schema["function"].pop("required", [])
+                    schema["function"]["parameters"] = {
+                        "type": "object",
+                        "properties": props,
+                        "required": req
+                    }
+            elif "function" in schema:
+                # Format: {"function": {...}}
+                schema["type"] = "function"
+                if "name" not in schema["function"]:
+                    schema["function"]["name"] = tool_name
+            else:
+                # Format: raw function definition or parameters
+                name = schema.get("name", tool_name)
+                description = schema.get("description", f"Tool to execute {tool_name}")
+                
+                if "parameters" in schema:
+                    parameters = schema["parameters"]
+                elif "properties" in schema:
+                    # It's an object schema, use it as parameters
+                    parameters = {
+                        "type": "object",
+                        "properties": schema.get("properties", {}),
+                        "required": schema.get("required", [])
+                    }
+                    # If there was a description, it's often better to keep it in the function,
+                    # but we can leave it in parameters too as LiteLLM mostly cares about the top one
+                else:
+                    parameters = {"type": "object", "properties": {}}
+
+                schema = {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": description,
+                        "parameters": parameters
+                    }
+                }
+            schemas.append(schema)
             
     return schemas
 
@@ -110,22 +168,30 @@ def load_agent_tools(agent_name: str) -> Dict[str, Callable]:
     return tools_map
 
 async def run_agent_request(agent_name: str, message: str, user_id: str = None) -> Dict[str, Any]:
-    """Runs the specified agent with the given message using LiteLLM."""
+    """Runs the specified agent with history support."""
+    from .services.history_service import history_service
+    
     if agent_name not in get_available_agents():
         raise ValueError(f"Agent {agent_name} not found")
         
     config = get_agent_config(agent_name)
     tools_map = load_agent_tools(agent_name)
-    
-    # Load explicit schemas from schema folder, or fallback to auto-generated reflection
     tools_schemas = get_tool_schemas(agent_name, tools_map) if tools_map else None
+    
+    # Load history
+    history = await history_service.get_recent_history(user_id, agent_name, limit=5)
+    
+    # Identify how many new messages we add to save later
+    initial_history_count = len(history)
     
     system_prompt = config.get("prompt", "You are a helpful AI agent.")
     
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": message}
-    ]
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(history)
+    
+    # Add new user message
+    user_msg = {"role": "user", "content": message}
+    messages.append(user_msg)
     
     # Provider mapping based on .env
     # litellm requires model explicitly prefixing like 'openai/gpt-4o' or 'anthropic/claude-3-opus'
@@ -186,7 +252,10 @@ async def run_agent_request(agent_name: str, message: str, user_id: str = None) 
                             args['user_id'] = user_id
                             
                     try:
-                        result = func(**args)
+                        if inspect.iscoroutinefunction(func):
+                            result = await func(**args)
+                        else:
+                            result = func(**args)
                     except Exception as e:
                         result = f"Error executing tool: {e}"
                 else:
@@ -205,6 +274,13 @@ async def run_agent_request(agent_name: str, message: str, user_id: str = None) 
     if hasattr(final_content, "content"): # if object
         final_content = final_content.content
         
+    # Save new messages to history
+    # System prompt is at index 0, followed by history (len = initial_history_count)
+    # The new messages start after the history
+    new_messages = messages[1 + initial_history_count:]
+    if user_id and new_messages:
+        await history_service.add_messages(user_id, agent_name, new_messages)
+
     return {
         "agent": agent_name,
         "message": message,

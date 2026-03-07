@@ -6,3 +6,5 @@ litellm
 pyyaml
 sqlalchemy
 asyncpg
+aiohttp
+Pillow

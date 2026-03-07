@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any
-from legacy.core.services.final_fantasy_api import FinalFantasyAPI
+from app.services.ffxiv import FinalFantasyAPI
 
 logger = logging.getLogger(__name__)
 

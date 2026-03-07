@@ -2,8 +2,7 @@ import os
 import logging
 from typing import Dict, Any, Optional
 from PIL import Image, ImageDraw
-from legacy.core.services.final_fantasy_api import FinalFantasyAPI
-from legacy.core.tools.ffxiv import FFXIVUtils
+from app.services.ffxiv import FinalFantasyAPI, FFXIVUtils
 
 logger = logging.getLogger(__name__)
 

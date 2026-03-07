@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, Dict, Any, List
-from legacy.core.tools.ffxiv import FFXIVUtils
+from app.services.ffxiv import FFXIVUtils
 from agents.final_fantasy.tools.ffxiv_map import _map_mgr
 
 logger = logging.getLogger(__name__)
