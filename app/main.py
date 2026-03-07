@@ -3,8 +3,57 @@ from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from .config import settings
 from . import agent_runner
+from typing import Optional, Any, Dict, List
+from contextlib import asynccontextmanager
+from app.services.database import engine, Base
+import app.models.token
+import app.models.travel_profile
+import app.models.message
 
-app = FastAPI(title="Agents Service", description="API to run dynamically configured agents")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize database tables
+    if settings.database_url:
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            print("Database tables initialized successfully.")
+        except Exception as e:
+            print(f"Warning: Failed to initialize database tables: {e}")
+    else:
+        print("Warning: DATABASE_URL not set, skipping table initialization.")
+        
+    agents = agent_runner.get_available_agents()
+    for agent_name in agents:
+        cfg = agent_runner.get_agent_config(agent_name)
+        endpoint = cfg.get("endpoint", f"/{agent_name}")
+        
+        # Ensure it starts with slash
+        if not endpoint.startswith("/"):
+            endpoint = f"/{endpoint}"
+            
+        # Ensure it's prefixed with /agents
+        if not endpoint.startswith("/agents"):
+            endpoint = f"/agents{endpoint}"
+            
+        print(f"Registering agent '{agent_name}' at endpoint POST {endpoint}")
+        
+        # Add the route dynamically using the factory function
+        app.add_api_route(
+            path=endpoint,
+            endpoint=create_agent_route(agent_name),
+            methods=["POST"],
+            response_model=dict,
+            dependencies=[Depends(get_api_key)],
+            tags=["Agents Execution"]
+        )
+    yield
+
+app = FastAPI(
+    title="Agents Service", 
+    description="API to run dynamically configured agents",
+    lifespan=lifespan
+)
 
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
@@ -78,51 +127,4 @@ def create_agent_route(agent_name: str):
     route_handler.__name__ = f"run_{agent_name}"
     return route_handler
 
-from contextlib import asynccontextmanager
-from app.services.database import engine, Base
-import app.models.token
-import app.models.travel_profile
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Initialize database tables
-    if settings.database_url:
-        try:
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            print("Database tables initialized successfully.")
-        except Exception as e:
-            print(f"Warning: Failed to initialize database tables: {e}")
-    else:
-        print("Warning: DATABASE_URL not set, skipping table initialization.")
-        
-    agents = agent_runner.get_available_agents()
-    for agent_name in agents:
-        cfg = agent_runner.get_agent_config(agent_name)
-        endpoint = cfg.get("endpoint", f"/{agent_name}")
-        
-        # Ensure it starts with slash
-        if not endpoint.startswith("/"):
-            endpoint = f"/{endpoint}"
-            
-        # Ensure it's prefixed with /agents
-        if not endpoint.startswith("/agents"):
-            endpoint = f"/agents{endpoint}"
-            
-        print(f"Registering agent '{agent_name}' at endpoint POST {endpoint}")
-        
-        # Add the route dynamically using the factory function
-        app.add_api_route(
-            path=endpoint,
-            endpoint=create_agent_route(agent_name),
-            methods=["POST"],
-            response_model=dict,
-            dependencies=[Depends(get_api_key)],
-            tags=["Agents Execution"]
-        )
-    yield
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint to verify the service is running."""
-    return {"status": "healthy"}
