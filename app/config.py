@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-4o-mini"
     llm_api_key: str
     llm_api_base: Optional[str] = None
+    database_url: Optional[str] = None
 
     class Config:
         env_file = ".env"

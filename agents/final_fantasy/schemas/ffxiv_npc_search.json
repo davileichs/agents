@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "description": "Search for an NPC in Final Fantasy XIV and optionally get a map with their location marked",
+  "properties": {
+    "npc_name": {
+      "type": "string",
+      "description": "Name of the NPC to search for"
+    },
+    "location_name": {
+      "type": "string",
+      "description": "Specific location/place name where the NPC should be located (optional). If not provided, returns list of all locations where the NPC can be found."
+    }
+  },
+  "required": ["npc_name"]
+}

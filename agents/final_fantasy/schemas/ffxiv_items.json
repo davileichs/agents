@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "description": "Search for items and prices in Final Fantasy XIV",
+  "properties": {
+    "item_name": {
+      "type": "string",
+      "description": "Name of the FFXIV item to search for pricing and market data"
+    }
+  },
+  "required": ["item_name"]
+}

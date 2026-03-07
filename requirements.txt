@@ -4,3 +4,5 @@ pydantic
 pydantic-settings
 litellm
 pyyaml
+sqlalchemy
+asyncpg

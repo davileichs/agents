@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "description": "Get weather forecast for a specific FFXIV zone",
+  "properties": {
+    "zone": {
+      "type": "string",
+      "description": "FFXIV zone name to get weather forecast for (e.g., 'Limsa Lominsa', 'The Tempest')"
+    }
+  },
+  "required": ["zone"]
+}

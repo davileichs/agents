@@ -1,0 +1,32 @@
+{
+  "description": "Connect to Keep Trip Plan Simple and fetch trip data. User does not needs to especify Keep Trip Plan Simple, it can request if he says about trips or mention KTPS",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": [
+          "save_token",
+          "list_trips",
+          "chat"
+        ],
+        "description": "list_trips: fetch from token URL - ALWAYS use first when user asks about trips, then show the list. chat: use to talk with an AI agent about a specific trip."
+      },
+      "token": {
+        "type": "string",
+        "description": "Token ID to be saved to access KTPS trips"
+      },
+      "trip_id": {
+        "type": "string",
+        "description": "Trip ID from the trips list. Can be provided once to chat, and will be saved for subsequent chat requests."
+      },
+      "message": {
+        "type": "string",
+        "description": "User message string to send to the chat agent."
+      }
+    },
+    "required": [
+      "action"
+    ]
+  }
+}

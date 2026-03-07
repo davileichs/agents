@@ -26,8 +26,11 @@ def get_api_key(api_key: str = Security(api_key_header)):
         )
     return api_key
 
+from typing import Optional
+
 class AgentRequest(BaseModel):
     message: str
+    user_id: Optional[str] = None
 
 @app.get("/health")
 async def health_check():
@@ -64,7 +67,7 @@ async def list_agents(api_key: str = Depends(get_api_key)):
 def create_agent_route(agent_name: str):
     async def route_handler(request: AgentRequest, api_key: str = Depends(get_api_key)):
         try:
-            result = await agent_runner.run_agent_request(agent_name, request.message)
+            result = await agent_runner.run_agent_request(agent_name, request.message, request.user_id)
             return result
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -75,9 +78,16 @@ def create_agent_route(agent_name: str):
     route_handler.__name__ = f"run_{agent_name}"
     return route_handler
 
+from app.services.database import engine, Base
+import app.models.token  # Ensure models are imported before creating tables
+
 # Register endpoints at startup based on agent configurations
 @app.on_event("startup")
 async def startup_event():
+    # Initialize database tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        
     agents = agent_runner.get_available_agents()
     for agent_name in agents:
         cfg = agent_runner.get_agent_config(agent_name)

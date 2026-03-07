@@ -1,0 +1,26 @@
+{
+    "name": "manage_ktps_token",
+    "description": "Manage the KTPS (Keep Trip Plan Simple) API token for a specific user. Allow the agent to add, update, delete, or get a user's KTPS API token.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": [
+                    "add",
+                    "update",
+                    "delete",
+                    "get"
+                ],
+                "description": "The action to perform: 'add', 'update', 'delete', or 'get'."
+            },
+            "token": {
+                "type": "string",
+                "description": "The KTPS token to save or update. Required for 'add' and 'update' actions."
+            }
+        },
+        "required": [
+            "action"
+        ]
+    }
+}

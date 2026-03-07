@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "description": "Search for collectables in Final Fantasy XIV",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the collectable to search for"
+    },
+    "collectable_type": {
+      "type": "string",
+      "description": "Type of collectable to search for",
+      "enum": ["mount", "minion", "frame"],
+      "default": "mount"
+    }
+  },
+  "required": ["name"]
+}

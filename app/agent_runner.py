@@ -109,7 +109,7 @@ def load_agent_tools(agent_name: str) -> Dict[str, Callable]:
                         
     return tools_map
 
-async def run_agent_request(agent_name: str, message: str) -> Dict[str, Any]:
+async def run_agent_request(agent_name: str, message: str, user_id: str = None) -> Dict[str, Any]:
     """Runs the specified agent with the given message using LiteLLM."""
     if agent_name not in get_available_agents():
         raise ValueError(f"Agent {agent_name} not found")
@@ -121,6 +121,7 @@ async def run_agent_request(agent_name: str, message: str) -> Dict[str, Any]:
     tools_schemas = get_tool_schemas(agent_name, tools_map) if tools_map else None
     
     system_prompt = config.get("prompt", "You are a helpful AI agent.")
+    
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": message}
@@ -177,6 +178,13 @@ async def run_agent_request(agent_name: str, message: str) -> Dict[str, Any]:
                     
                 if func_name in tools_map:
                     func = tools_map[func_name]
+                    
+                    # Intercept and securely inject user_id if the tool accepts it
+                    if user_id:
+                        sig = inspect.signature(func)
+                        if 'user_id' in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                            args['user_id'] = user_id
+                            
                     try:
                         result = func(**args)
                     except Exception as e:

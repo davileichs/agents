@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "description": "Search for information about items, classes, quests, and other content from the Baldur's Gate 3 wiki at bg3.wiki",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Search query for Baldur's Gate 3 content (e.g., 'Sword of Balduran', 'Fighter class', 'main quest', 'Astarion', 'Shadowheart')"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum number of results to return",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 20
+    }
+  },
+  "required": ["query"]
+}

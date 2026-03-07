@@ -1,0 +1,41 @@
+{
+  "type": "object",
+  "description": "Search for flights",
+  "properties": {
+    "departure": {
+      "type": "string",
+      "description": "Departure airport code (e.g., 'JFK', 'LAX', 'LHR'). Default FRA"
+    },
+    "arrival": {
+      "type": "string", 
+      "description": "Arrival airport code (e.g., 'LAX', 'JFK', 'CDG')"
+    },
+    "outbound_date": {
+      "type": "string",
+      "description": "Outbound flight date in YYYY-MM-DD format"
+    },
+    "return_date": {
+      "type": "string",
+      "description": "Return flight date in YYYY-MM-DD format (required for round trips, optional for one-way)"
+    },
+    "currency": {
+      "type": "string",
+      "description": "Currency code for pricing (default: EUR)",
+      "default": "EUR"
+    },
+    "include_airlines": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of airline codes to include in search (e.g., ['AA', 'DL', 'UA'])"
+    },
+    "type": {
+      "type": "integer",
+      "description": "Flight type: 1=round trip, 2=one way, 3=multi-city",
+      "default": 1,
+      "enum": [1, 2, 3]
+    }
+  },
+  "required": ["arrival", "outbound_date"]
+}

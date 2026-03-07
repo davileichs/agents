@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "description": "Convert between different currencies using real-time exchange rates.",
+  "properties": {
+    "from_currency": {
+      "type": "string",
+      "description": "The source currency code (3-letter ISO code, e.g., 'EUR', 'USD', 'GBP')",
+      "minLength": 3,
+      "maxLength": 3
+    },
+    "to_currency": {
+      "type": "string", 
+      "description": "The target currency code (3-letter ISO code, e.g., 'EUR', 'USD', 'GBP')",
+      "minLength": 3,
+      "maxLength": 3
+    },
+    "amount": {
+      "type": "number",
+      "description": "The amount to convert from the source currency to the target currency",
+      "minimum": 0.01
+    }
+  },
+  "required": ["from_currency", "to_currency", "amount"]
+}
