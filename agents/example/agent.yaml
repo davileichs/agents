@@ -1,7 +1,0 @@
-name: Example Agent
-endpoint: /example
-description: A basic agent to test the framework
-prompt: |
-  You are a helpful assistant with access to weather tools. 
-  When the user asks for the weather, use the get_weather tool to provide the information. 
-  Output your response clearly based on the tool result.
