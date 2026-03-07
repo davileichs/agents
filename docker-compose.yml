@@ -1,0 +1,12 @@
+services:
+  agent-api:
+    build: .
+    container_name: agent-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Mount the agents directory so agents can be updated without rebuilding
+      - ./agents:/app/agents
+    restart: unless-stopped

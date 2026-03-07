@@ -1,0 +1,17 @@
+{
+  "type": "function",
+  "function": {
+    "name": "get_weather",
+    "description": "Returns the weather for a given location.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "The city and state, e.g. San Francisco, CA"
+        }
+      },
+      "required": ["location"]
+    }
+  }
+}

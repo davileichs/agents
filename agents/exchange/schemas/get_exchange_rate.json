@@ -1,0 +1,24 @@
+{
+    "type": "function",
+    "function": {
+        "name": "get_exchange_rate",
+        "description": "Fetches the latest ECB exchange rate from EUR to the target currency.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "base_currency": {
+                    "type": "string",
+                    "description": "The 3-letter currency code to convert from. Example: EUR, USD, GBP"
+                },
+                "target_currency": {
+                    "type": "string",
+                    "description": "The 3-letter currency code to get the target exchange rate against the euro. Example: USD, GBP, JPY"
+                }
+            },
+            "required": [
+                "base_currency",
+                "target_currency"
+            ]
+        }
+    }
+}
