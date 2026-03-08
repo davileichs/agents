@@ -1,5 +1,5 @@
 {
-  "description": "Connect to Keep Trip Plan Simple and fetch trip data. User does not needs to especify Keep Trip Plan Simple, it can request if he says about trips or mention KTPS",
+  "description": "Connect to Keep Trip Plan Simple (KTPS) and fetch trip data. It has all information about users trips",
   "parameters": {
     "type": "object",
     "properties": {

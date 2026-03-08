@@ -112,6 +112,35 @@ async def list_agents(api_key: str = Depends(get_api_key)):
         
     return {"agents": agents_data}
 
+@app.get("/agents/{agent_name}")
+async def get_agent_details(agent_name: str, api_key: str = Depends(get_api_key)):
+    """Returns details for a specific agent: prompt, name, and tools."""
+    available_agents = agent_runner.get_available_agents()
+    if agent_name not in available_agents:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Agent '{agent_name}' not found"
+        )
+        
+    cfg = agent_runner.get_agent_config(agent_name)
+    tools_map = agent_runner.load_agent_tools(agent_name)
+    tools_schemas = agent_runner.get_tool_schemas(agent_name, tools_map)
+    
+    # Filter to only return name and description for each tool
+    tools_data = []
+    for schema in tools_schemas:
+        if "function" in schema:
+            tools_data.append({
+                "name": schema["function"].get("name"),
+                "description": schema["function"].get("description")
+            })
+    
+    return {
+        "name": cfg.get("name", agent_name),
+        "prompt": cfg.get("prompt", ""),
+        "tools": tools_data
+    }
+
 # Function to generate route handler dynamically
 def create_agent_route(agent_name: str):
     async def route_handler(request: AgentRequest, api_key: str = Depends(get_api_key)):
