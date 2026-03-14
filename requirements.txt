@@ -8,3 +8,4 @@ sqlalchemy
 asyncpg
 aiohttp
 Pillow
+mcp

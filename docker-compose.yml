@@ -9,4 +9,5 @@ services:
     volumes:
       # Mount the agents directory so agents can be updated without rebuilding
       - ./agents:/app/agents
+      - ./app:/app/app
     restart: unless-stopped

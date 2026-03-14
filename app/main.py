@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException, Security, status
+import asyncio
+from fastapi import FastAPI, Depends, HTTPException, Security, status, Request
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from .config import settings
@@ -9,6 +10,9 @@ from app.services.database import engine, Base
 import app.models.token
 import app.models.travel_profile
 import app.models.message
+from .mcp_server import agent_mcp_server
+from mcp.server.sse import SseServerTransport
+from starlette.responses import Response
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -155,5 +159,53 @@ def create_agent_route(agent_name: str):
     # Modify function name for OpenAPI schema clarity
     route_handler.__name__ = f"run_{agent_name}"
     return route_handler
+
+# Instantiate the transport globally so it persists across requests
+mcp_transport = SseServerTransport("/mcp/messages")
+
+async def check_mcp_auth(scope) -> bool:
+    """Manually verify API key from ASGI scope."""
+    headers = dict(scope.get('headers', []))
+    auth_header = headers.get(b'authorization', b'').decode('utf-8')
+    if not auth_header:
+        return False
+    
+    token = auth_header
+    if token.startswith("Bearer "):
+        token = token[7:]
+    
+    return token == settings.api_key
+
+class MCPSSEApp:
+    async def __call__(self, scope, receive, send):
+        if not await check_mcp_auth(scope):
+            response = Response("Unauthorized", status_code=403)
+            await response(scope, receive, send)
+            return
+
+        async with mcp_transport.connect_sse(scope, receive, send) as (read_stream, write_stream):
+            await agent_mcp_server.run(
+                read_stream,
+                write_stream,
+                agent_mcp_server.create_initialization_options()
+            )
+
+class MCPMessagesApp:
+    async def __call__(self, scope, receive, send):
+        if not await check_mcp_auth(scope):
+            response = Response("Unauthorized", status_code=403)
+            await response(scope, receive, send)
+            return
+
+        await mcp_transport.handle_post_message(scope, receive, send)
+
+# Register raw ASGI routes
+app.add_route("/mcp/sse", MCPSSEApp(), methods=["GET"])
+app.add_route("/mcp/messages", MCPMessagesApp(), methods=["POST"])
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint to verify the service is running."""
+    return {"status": "healthy"}
 
 
